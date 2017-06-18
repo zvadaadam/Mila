@@ -11,7 +11,7 @@
 typedef enum {LETTER, NUMBER, WHITE_SPACE, END, NO_TYPE} InputCharType;
 
 
-const char *symbTable[35] = {
+const char *symbTable[36] = {
         "IDENT",
         "NUMB",
         "PLUS", "MINUS", "MULTIPLY", "DIVIDE",
@@ -27,8 +27,8 @@ const char *symbTable[35] = {
         "kwFOR", "kwWHILE",
         "kwTO", "kwDO",
         "kwWRITE", "kwREAD",
-        "SEMICOLON", "COMMA"
-                "EOI", "ERR"
+        "SEMICOLON", "COMMA", "DOT",
+        "EOI", "ERR"
 }; //symbol names in the same order as in LexSymbolType
 
 static int character;   // vstupni znak
@@ -135,6 +135,13 @@ LexicalSymbol readLexem(void) {
         case ',':
             data.type = COMMA;
             readInput();
+
+            return  data;
+        case '.':
+            data.type = DOT;
+            readInput();
+
+            return  data;
         case '=':
             readInput();
             goto q51;
@@ -164,6 +171,7 @@ LexicalSymbol readLexem(void) {
         default:
             data.type = ERR;
             error("Nedovoleny znak.");
+
             return data;
     }
 

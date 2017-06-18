@@ -88,7 +88,7 @@ int createObject(Module * module) {
 
 int main() {
 
-  string fileName = "";
+  string fileName = "../examples/hexa.p";
 
   //Important objects!
   LLVMContext context;

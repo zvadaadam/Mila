@@ -99,7 +99,7 @@ Prog * Parser::Program() {
 
     StatmList * statmentList = ProgramBlock();
 
-    //Compare(kwPERIOD)
+    Compare(DOT);
 
     return new Prog(programIdent, statmentList);
 }

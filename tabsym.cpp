@@ -16,20 +16,22 @@ SymboleTable::~SymboleTable() {
     }
 }
 
-vector<Symbole *> & SymboleTable::GetAllGlobalVar() const {
+vector<Symbole *> SymboleTable::GetAllGlobalVar() const {
     vector<Symbole *> allGlobal;
 
     for (auto var : _globalTable) {
         allGlobal.push_back(var.second);
     }
+    return allGlobal;
 }
 
-vector<Symbole *> & SymboleTable::GetAllLocalVar() const {
+vector<Symbole *> SymboleTable::GetAllLocalVar() const {
     vector<Symbole *> allLocal;
 
     for (auto var : _localTable) {
         allLocal.push_back(var.second);
     }
+    return allLocal;
 }
 
 void SymboleTable::DeclareConst(string ident, int val) {

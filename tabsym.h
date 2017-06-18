@@ -43,9 +43,9 @@ public:
 
     ~SymboleTable();
 
-    vector<Symbole *> & GetAllGlobalVar() const;
+    vector<Symbole *> GetAllGlobalVar() const;
 
-    vector<Symbole *> & GetAllLocalVar() const;
+    vector<Symbole *> GetAllLocalVar() const;
 
     void DeclareConst(string ident, int val);
 

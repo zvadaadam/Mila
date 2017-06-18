@@ -1,6 +1,6 @@
 
 cmake_minimum_required(VERSION 3.7)
-project(testLLVM)
+project(Mila)
 
 # LLVM
 # set(LLVM_INSTALL_PREFIX "/Users/adamzvada/Documents/School/6.semester/PJP/LLVM_DEV/llvm")
@@ -26,5 +26,5 @@ llvm_map_components_to_libnames(llvm_libs x86asmparser analysis instcombine scal
 
 set(SOURCE_FILES main.cpp ast.cpp ast.h parser.cpp parser.h lexan.cpp lexan.h tabsym.cpp tabsym.h input.cpp input.h)
 
-add_executable(testLLVM ${SOURCE_FILES})
-target_link_libraries(testLLVM ${llvm_libs})
+add_executable(Mila ${SOURCE_FILES})
+target_link_libraries(Mila ${llvm_libs})
