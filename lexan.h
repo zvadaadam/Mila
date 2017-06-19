@@ -22,11 +22,13 @@ typedef enum {
     kwFOR, kwWHILE,
     kwTO, kwDO,
     kwWRITE, kwREAD,
+    kwOR, kwAND,
+    kwMOD,
     SEMICOLON, COMMA, DOT,
     EOI, ERR
 } LexSymbolType;
 
-extern const char *symbTable[36];
+extern const char *symbTable[39];
 
 #define MAX_IDENT_LEN 32
 

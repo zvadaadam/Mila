@@ -45,14 +45,17 @@ class Expr : public Node {
 
 class Var : public Expr {
 public:
-    Var(int value) : _value(value) {}
+    Var(int value, const string & name, bool rvalue = false) : _value(value), _name(name), _rvalue(rvalue) {}
     virtual ~Var() {}
     virtual Var * Optimize() { return this; }
     virtual void Translate() {}
     virtual llvm::Value * GenerateIR();
+
+    string GetName() const { return _name; }
 private:
     int _value;
-    string _name; //TODO, check parser!
+    string _name;
+    bool _rvalue;
 };
 
 class Numb : public Expr {
@@ -131,6 +134,20 @@ private:
     Expr * _expression;
 
     Constant * printFunc();
+};
+
+class Read : public Statm {
+public:
+    Read(Var * var) : _var(var) {}
+    virtual ~Read() {}
+    virtual Read * Optimize() { return this; }
+    virtual void Translate() {}
+    virtual Value * GenerateIR();
+
+private:
+    Var * _var;
+
+    Constant * scanfFunc();
 };
 
 class If : public Statm {

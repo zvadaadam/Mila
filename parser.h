@@ -39,6 +39,7 @@ public:
 
     void PrintSymb(LexicalSymbol lexSymbol);
 
+
     Prog * Program();
 
 
@@ -60,6 +61,7 @@ public:
 
     Statm * AssigmentStat();
     Statm * WriteStat();
+    Statm * ReadStat();
     Statm * IfStat();
     Statm * ForStat();
     Statm * WhileStat();

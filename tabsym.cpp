@@ -36,7 +36,7 @@ vector<Symbole *> SymboleTable::GetAllLocalVar() const {
 
 void SymboleTable::DeclareConst(string ident, int val) {
     auto it = _globalTable.find(ident);
-    if (it == _globalTable.end()) {
+    if (it != _globalTable.end()) {
         cout << "Constant \"" << ident << "\" was already decleared" << endl;
         exit(1);
     }
@@ -52,7 +52,7 @@ void SymboleTable::DeclareConst(string ident, int val) {
 
 void SymboleTable::DeclareVar(string ident) {
     auto it = _globalTable.find(ident);
-    if (it == _globalTable.end()) {
+    if (it != _globalTable.end()) {
         cout << "Variable \"" << ident << "\" was already decleared" << endl;
         exit(1);
     }

@@ -209,6 +209,10 @@ StatmList * Parser::ProgramBlock() {
 
     Compare(kwEND);
 
+    if (_symbole.type == SEMICOLON) {
+        ReadToken();
+    }
+
     return listStatm;
 }
 
@@ -225,6 +229,8 @@ Statm * Parser::Statement() {
             return AssigmentStat();
         case kwWRITE:
             return WriteStat();
+        case kwREAD:
+            return ReadStat();
         case kwIF:
             return IfStat();
         case kwFOR:
@@ -253,16 +259,17 @@ StatmList * Parser::StatementNext() {
 Statm * Parser::AssigmentStat() {
     string ident;
     CompareIndent(ident);
-    Var * var = new Var(_symTable->GetValue(ident));
+    Var * var = new Var(_symTable->GetValue(ident), ident);
     Compare(ASSIGN);
     Expr * expression = Expression();
 
     return new Assign(var, expression);
 }
 
-// <write> -> kwWRITE EXPR
+// <write> -> kwWRITE <expr>
 Statm * Parser::WriteStat() {
     Compare(kwWRITE);
+
     Expr * expression = Expression();
 
     Statm * statement = new Write(expression);
@@ -270,13 +277,30 @@ Statm * Parser::WriteStat() {
     return statement;
 }
 
-// <if> -> kwIF <condition> kwTHEN <statement> <elseStatement>
+// <read> -> kwREAD IDENT
+Statm * Parser::ReadStat() {
+    Compare(kwREAD);
+
+    string ident;
+    CompareIndent(ident);
+    Var * var = new Var(_symTable->GetValue(ident), ident);
+
+    Statm * statement = new Read(var);
+
+    return statement;
+}
+
+// <if> -> kwIF <condition> kwTHEN <statement> <elseStatement> | kwIF <condition> kwTHEN <programBlock> <elseStatement>
 Statm * Parser::IfStat() {
     Compare(kwIF);
     Expr * expression = Condition();
     Compare(kwTHEN);
 
-    return new If(expression, Statement(), Else());;
+    if (_symbole.type == kwBEGIN) {
+        return new If(expression, ProgramBlock(), Else());
+    } else {
+        return new If(expression, Statement(), Else());
+    }
 }
 
 // <for> ->
@@ -293,6 +317,7 @@ Statm * Parser::WhileStat() {
     return new While(condition, Statement());
 }
 
+// <switch> ->
 Statm * Parser::SwitchStat() {
     //TODO
     return nullptr;
@@ -308,31 +333,51 @@ Expr * Parser::Condition() {
     return new BinOp(op, left, right);
 }
 
-// <elseStatement> -> kwELSE <statement> | EPS
+// <elseStatement> -> kwELSE <statement> | kwELSE <programBlock> | EPS
 Statm * Parser::Else() {
     Statm * statement = nullptr;
     if (_symbole.type == kwELSE) {
-        statement = Statement();
+        ReadToken();
+        if (_symbole.type == kwBEGIN) {
+            statement = ProgramBlock();
+        } else {
+            statement = Statement();
+        }
     }
 
     return statement;
 }
 
-// <operator> -> EQ | NOT_EQ | LESS | GRATHER | LESS_OR_EQ | GRATHER_OR_EQ
+// <operator> -> EQ | NOT_EQ | LESS | GRATHER | LESS_OR_EQ | GRATHER_OR_EQ | OR | AND | MOD
 LexSymbolType Parser::Operator() {
     switch (_symbole.type) {
         case EQ:
+            ReadToken();
             return LexSymbolType::EQ;
         case NOT_EQ:
+            ReadToken();
             return LexSymbolType::NOT_EQ;
         case LESS:
+            ReadToken();
             return LexSymbolType::LESS;
         case GRATHER:
+            ReadToken();
             return LexSymbolType::GRATHER;
         case LESS_OR_EQ:
+            ReadToken();
             return LexSymbolType::LESS_OR_EQ;
         case GRATHER_OR_EQ:
+            ReadToken();
             return LexSymbolType::GRATHER_OR_EQ;
+        case kwOR:
+            ReadToken();
+            return LexSymbolType::kwOR;
+        case kwAND:
+            ReadToken();
+            return LexSymbolType::kwAND;
+        case kwMOD:
+            ReadToken();
+            return LexSymbolType::kwMOD;
         default:
             throw ParserException("Unsupported Operator");
             //exit(1);
@@ -353,7 +398,9 @@ Expr * Parser::Expression() {
     return ExpressionNext(Term());
 }
 
-// <expressionNext> -> + <term> <expressionNext> | - <term> <expressionNext> | EPS
+// <expressionNext> -> PLUS <term> <expressionNext> | MINUS <term> <expressionNext> {| GRATHER <term> <expressionNext>
+// GRATHER_OR_EQ <term> <expressionNext> | LESS <term> <expressionNext> | LESS_OR_EQ <term> <expressionNext>|
+// EQ <term> <expressionNext> | NOT_EQ <term> <expressionNext> | kwAND <term> <expressionNext> | kwOR <term> <expressionNext>} | EPS
 Expr * Parser::ExpressionNext(Expr * inheretedExp) {
 
     switch (_symbole.type) {
@@ -363,6 +410,32 @@ Expr * Parser::ExpressionNext(Expr * inheretedExp) {
         case MINUS:
             ReadToken();
             return ExpressionNext(new BinOp(MINUS, inheretedExp, Term()));
+            /*
+        case GRATHER:
+            ReadToken();
+            return ExpressionNext(new BinOp(GRATHER, inheretedExp, Term()));
+        case GRATHER_OR_EQ:
+            ReadToken();
+            return ExpressionNext(new BinOp(GRATHER_OR_EQ, inheretedExp, Term()));
+        case LESS:
+            ReadToken();
+            return ExpressionNext(new BinOp(LESS, inheretedExp, Term()));
+        case LESS_OR_EQ:
+            ReadToken();
+            return ExpressionNext(new BinOp(LESS_OR_EQ, inheretedExp, Term()));
+        case EQ:
+            ReadToken();
+            return ExpressionNext(new BinOp(EQ, inheretedExp, Term()));
+        case NOT_EQ:
+            ReadToken();
+            return ExpressionNext(new BinOp(NOT_EQ, inheretedExp, Term()));
+        case kwAND:
+            ReadToken();
+            return ExpressionNext(new BinOp(kwAND, inheretedExp, Term()));
+        case kwOR:
+            ReadToken();
+            return ExpressionNext(new BinOp(kwOR, inheretedExp, Term()));
+             */
         default:
             return inheretedExp;
     }
@@ -373,7 +446,7 @@ Expr * Parser::Term() {
     return TermNext(Factor());
 }
 
-// <termNext> -> MULTIPLY <factor> <termNext> | DIVIDE <factor> <termNext> | EPS
+// <termNext> -> MULTIPLY <factor> <termNext> | DIVIDE <factor> <termNext> | kwMOD <factor> <termNext> | EPS
 Expr * Parser::TermNext(Expr * inheretedExp) {
     switch (_symbole.type) {
         case MULTIPLY:
@@ -382,6 +455,9 @@ Expr * Parser::TermNext(Expr * inheretedExp) {
         case DIVIDE:
             ReadToken();
             return TermNext(new BinOp(DIVIDE, inheretedExp, Term()));
+        case kwMOD:
+            ReadToken();
+            return  TermNext(new BinOp(kwMOD, inheretedExp, Term()));
         default:
             return inheretedExp;
     }
@@ -421,7 +497,7 @@ Expr * Parser::VarOrConst(string & id) {
         case CONST:
             return new Numb(value);
         case VAR:
-            return new Var(value);
+            return new Var(value, id, true);
         default:
             return nullptr;
     }

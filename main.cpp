@@ -27,104 +27,113 @@ using namespace std;
 
 
 // Very much inspired on "http://llvm.org/docs/tutorial"
-int createObject(Module * module) {
+int createObject(Module *module) {
 
-  // Initialize the target registry etc.
-  InitializeNativeTarget();
-  InitializeNativeTargetAsmParser();
-  InitializeNativeTargetAsmPrinter();
+    // Initialize the target registry etc.
 
-  auto TargetTriple = sys::getDefaultTargetTriple();
-  module->setTargetTriple(TargetTriple);
 
-  std::string Error;
-  auto Target = TargetRegistry::lookupTarget(TargetTriple, Error);
+    InitializeNativeTarget();
+    InitializeNativeTargetAsmParser();
+    InitializeNativeTargetAsmPrinter();
 
-  // Print an error and exit if we couldn't find the requested target.
-  // This generally occurs if we've forgotten to initialise the
-  // TargetRegistry or we have a bogus target triple.
-  if (!Target) {
-    errs() << Error;
-    return 1;
-  }
+    auto TargetTriple = sys::getDefaultTargetTriple();
+    module->setTargetTriple(TargetTriple);
 
-  auto CPU = "generic";
-  auto Features = "";
+    std::string Error;
+    auto Target = TargetRegistry::lookupTarget(TargetTriple, Error);
 
-  TargetOptions opt;
-  auto RM = Optional<Reloc::Model>();
-  auto TheTargetMachine = Target->createTargetMachine(TargetTriple, CPU, Features, opt, RM);
+    // Print an error and exit if we couldn't find the requested target.
+    // This generally occurs if we've forgotten to initialise the
+    // TargetRegistry or we have a bogus target triple.
+    if (!Target) {
+        errs() << Error;
+        return 1;
+    }
 
-  module->setDataLayout(TheTargetMachine->createDataLayout());
-  module->setTargetTriple(TargetTriple);
+    auto CPU = "generic";
+    auto Features = "";
 
-  auto Filename = "output.o";
-  std::error_code EC;
-  raw_fd_ostream dest(Filename, EC, sys::fs::F_None);
+    TargetOptions opt;
+    auto RM = Optional<Reloc::Model>();
+    auto TheTargetMachine = Target->createTargetMachine(TargetTriple, CPU, Features, opt, RM);
 
-  if (EC) {
-    errs() << "Could not open file: " << EC.message();
-    return 1;
-  }
+    module->setDataLayout(TheTargetMachine->createDataLayout());
+    module->setTargetTriple(TargetTriple);
 
-  //Print generated code
-  module->dump();
+    auto Filename = "output.o";
+    std::error_code EC;
+    raw_fd_ostream dest(Filename, EC, sys::fs::F_None);
 
-  legacy::PassManager pass;
-  auto FileType = TargetMachine::CGFT_ObjectFile;
+    if (EC) {
+        errs() << "Could not open file: " << EC.message();
+        return 1;
+    }
 
-  if (TheTargetMachine->addPassesToEmitFile(pass, dest, FileType)) {
-    errs() << "TheTargetMachine can't emit a file of this type";
-    return 1;
-  }
+    //Print generated code
+    module->dump();
 
-  pass.run(*module);
-  dest.flush();
+    legacy::PassManager pass;
+    auto FileType = TargetMachine::CGFT_ObjectFile;
 
-  outs() << "Wrote " << Filename << "\n";
+    if (TheTargetMachine->addPassesToEmitFile(pass, dest, FileType)) {
+        errs() << "TheTargetMachine can't emit a file of this type";
+        return 1;
+    }
 
-  return 0;
+    pass.run(*module);
+    dest.flush();
+
+    outs() << "Wrote " << Filename << "\n";
+
+    return 0;
 }
 
 int main() {
 
-  string fileName = "../examples/hexa.p";
-
-  //Important objects!
-  LLVMContext context;
-  IRBuilder<> builder(context);
-  Module * module = new Module("mainTest", context);
-  map<string, Value *> namedValues;
-
-  // MAIN()
-
-  Type *returnType = Type::getInt32Ty(context);
-  //vector<Type*> argTypes;
-  FunctionType *mainFunctionType = FunctionType::get(returnType, false);
-  // ExternalLinkage - accessible through the whole program
-  Function *mainFunction = Function::Create(mainFunctionType, Function::ExternalLinkage, "main", module);
-
-  BasicBlock *mainBlock = BasicBlock::Create(context, "entry", mainFunction);
-  builder.SetInsertPoint(mainBlock);
+    //string fileName = "../examples/global.p";
+    //string fileName = "../examples/readVar.p";
+    //string fileName = "../examples/binOp.p";
+    string fileName = "../examples/if.p";
 
 
-  Parser * parser = new Parser(fileName, context, module, builder);
-  Prog * program = parser->Program();
 
-  program->GenerateIR();
+    //Important objects!
+    LLVMContext context;
+    IRBuilder<> builder(context);
+    Module *module = new Module("mainTest", context);
+    map<string, Value *> namedValues;
+
+    // create -> MAIN()
+
+    Type *returnType = Type::getInt32Ty(context);
+    //vector<Type*> argTypes;
+    FunctionType *mainFunctionType = FunctionType::get(returnType, false);
+    // ExternalLinkage - accessible through the whole program
+    Function *mainFunction = Function::Create(mainFunctionType, Function::ExternalLinkage, "main", module);
+
+    BasicBlock *mainBlock = BasicBlock::Create(context, "entry", mainFunction);
+    builder.SetInsertPoint(mainBlock);
 
 
-  //Set Return value
-  builder.CreateRet(ConstantInt::get(builder.getInt32Ty(), 0));
+    Parser *parser = new Parser(fileName, context, module, builder);
+
+    Prog *program = parser->Program();
+
+    program->GenerateIR();
 
 
-  createObject(module);
+    //Set Return value
+    builder.CreateRet(ConstantInt::get(builder.getInt32Ty(), 0));
 
-  delete module;
+    createObject(module);
 
-  llvm_shutdown();
+    delete module;
 
-  return 0;
+    llvm_shutdown();
+
+    system("g++ output.o");
+
+    return 0;
 }
 
 
