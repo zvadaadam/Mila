@@ -28,7 +28,7 @@ public:
 
 class Parser {
 public:
-    Parser(string filename, llvm::LLVMContext & context, llvm::Module * module, llvm::IRBuilder<> & builder);
+    Parser(string filename, llvm::LLVMContext & context, llvm::Module * module, llvm::IRBuilder<> & builder, BasicBlock * breakTarget);
 
 
     void Compare(LexSymbolType symboleType);
@@ -66,6 +66,7 @@ public:
     Statm * ForStat();
     Statm * WhileStat();
     Statm * SwitchStat();
+    Statm * BreakStat();
 
     Expr * Condition();
     Statm * Else();

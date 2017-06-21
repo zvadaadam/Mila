@@ -20,7 +20,8 @@ typedef enum {
     kwIF, kwTHEN, kwELSE,
     kwSWITCH,
     kwFOR, kwWHILE,
-    kwTO, kwDO,
+    kwTO, kwDOWNTO, kwDO,
+    kwBREAK,
     kwWRITE, kwREAD,
     kwOR, kwAND,
     kwMOD,
@@ -28,7 +29,7 @@ typedef enum {
     EOI, ERR
 } LexSymbolType;
 
-extern const char *symbTable[39];
+extern const char * symbTable[41];
 
 #define MAX_IDENT_LEN 32
 

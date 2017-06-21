@@ -29,11 +29,11 @@ void Parser::PrintSymb(LexicalSymbol lexSymbol) {
 }
 
 
-Parser::Parser(string filename, llvm::LLVMContext & context, llvm::Module * module, llvm::IRBuilder<> & builder) {
+Parser::Parser(string filename, llvm::LLVMContext & context, llvm::Module * module, llvm::IRBuilder<> & builder, BasicBlock * breakTarget) {
     _symTable = new SymboleTable();
 
     // init static variables for LLVM and pass
-    llvmAstInit(context, module, builder, _symTable);
+    llvmAstInit(context, module, builder, breakTarget, _symTable);
 
     if (!initLexan(filename.c_str())) {
         throw ParserException("Lexer had problem with init.");
@@ -48,7 +48,7 @@ void Parser::Compare(LexSymbolType symboleType) {
         ReadToken();
     } else {
         ostringstream os;
-        os << "Error with COMPARE of my symbole type " << _symbole.type << " and given type " << symboleType << endl;
+        os << "Error with COMPARE of my symbole type " << (char)_symbole.type << " and given type " << (char)symboleType << endl;
         ParserException(os.str());
     }
 }
@@ -59,7 +59,7 @@ void Parser::CompareIndent(string & ident) {
         ReadToken();
     } else {
         ostringstream os;
-        os << "Error with COMPARE IDENT where my symbole type is " << _symbole.type << endl;
+        os << "Error with COMPARE IDENT where my symbole type is " << (char)_symbole.type << endl;
         ParserException(os.str());
     }
 }
@@ -72,7 +72,7 @@ void Parser::CompareNumb(int & num) {
         cout << _symbole.type << endl;
     } else {
         ostringstream os;
-        os << "Error with COMPARE NUM where my symbole type is " << _symbole.type << endl;
+        os << "Error with COMPARE NUM where my symbole type is " << (char)_symbole.type << endl;
         ParserException(os.str());
     }
 }
@@ -221,7 +221,7 @@ StatmList * Parser::ProgramBlock() {
 //------------------------------------------------------------------------------------------------
 
 
-// <statement> -> <assignment> | <write> | <if> | <for> | <while> | <switch> | EPS
+// <statement> -> <assignment> | <write> | <if> | <for> | <while> | <switch> | <break> | EPS
 Statm * Parser::Statement() {
 
     switch (_symbole.type) {
@@ -239,6 +239,8 @@ Statm * Parser::Statement() {
             return WhileStat();
         case kwSWITCH:
             return SwitchStat();
+        case kwBREAK:
+            return BreakStat();
         default:
             break;
     }
@@ -303,18 +305,58 @@ Statm * Parser::IfStat() {
     }
 }
 
-// <for> ->
+
+/**
+ * For loop created by using while loop
+ */
+// <for> -> kwFOR <assigment> kwTO <expression> kwDO <programBlock> | kwFOR <assigment> kwTO <expression> kwDO <statement>
 Statm * Parser::ForStat() {
-    //TODO
-    return nullptr;
+    bool isAscendning;
+
+    Compare(kwFOR);
+    Statm * init = AssigmentStat();
+    if (_symbole.type == kwTO) {
+        isAscendning = true;
+    } else if (_symbole.type == kwDOWNTO) {
+        isAscendning = false;
+    } else {
+        cout << "Error, expects either 'TO' or 'DOWNTO'." << endl;
+        exit(1);
+    }
+    ReadToken();
+
+    Expr * endExpression = Expression();
+
+    Compare(kwDO);
+
+    Var * var = dynamic_cast<Assign*>(init)->GetVar();
+
+    LexSymbolType ascOrDesc = isAscendning ? PLUS : MINUS;
+
+    Expr * condition = new BinOp(NOT_EQ, new Var(var->GetName(), true), endExpression);
+
+    Statm * updateValue = new Assign(new Var(var->GetName(), false), new BinOp(ascOrDesc, new Var(var->GetName(), true), new Numb(1)));
+
+    StatmList * body = new StatmList(updateValue, ProgramBlock());
+
+    Statm * whileBlock = new While(condition, body);
+
+    StatmList * forStatement = new StatmList(init, new StatmList(whileBlock, nullptr));
+
+    return forStatement;
 }
 
-// <while> -> kwWHILE <condition> kwDO <statement>
+// <while> -> kwWHILE <condition> kwDO <statement> | kwWHILE <condition> kwDO <programBlock>
 Statm * Parser::WhileStat() {
     Compare(kwWHILE);
     Expr * condition = Condition();
     Compare(kwDO);
-    return new While(condition, Statement());
+
+    if (_symbole.type == kwBEGIN) {
+        return new While(condition, ProgramBlock());
+    } else {
+        return new While(condition, Statement());
+    }
 }
 
 // <switch> ->
@@ -322,6 +364,14 @@ Statm * Parser::SwitchStat() {
     //TODO
     return nullptr;
 }
+
+// <break> -> kwBREAK
+Statm * Parser::BreakStat() {
+    ReadToken();
+
+    return new Break();
+}
+
 
 // <condition> -> <expression> <operator> <expression>
 Expr * Parser::Condition() {

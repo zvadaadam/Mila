@@ -23,7 +23,7 @@ using namespace llvm;
 
 //-------------------------------------------------------------
 
-void llvmAstInit(LLVMContext & theContext, Module * theModule, IRBuilder<> & theBuilder, SymboleTable * symbTable);
+void llvmAstInit(LLVMContext & theContext, Module * theModule, IRBuilder<> & theBuilder, BasicBlock * breakTarget, SymboleTable * symbTable);
 
 //-------------------------------------------------------------
 
@@ -45,6 +45,7 @@ class Expr : public Node {
 
 class Var : public Expr {
 public:
+    Var(const string & name, bool rvalue = false) : _value(0), _name(name), _rvalue(rvalue) {}
     Var(int value, const string & name, bool rvalue = false) : _value(value), _name(name), _rvalue(rvalue) {}
     virtual ~Var() {}
     virtual Var * Optimize() { return this; }
@@ -71,7 +72,7 @@ private:
 
 class BinOp : public Expr {
 public:
-    BinOp(LexSymbolType op, Expr * left,Expr * right) : _op(op), _left(left), _right(right) {}
+    BinOp(LexSymbolType op, Expr * left, Expr * right) : _op(op), _left(left), _right(right) {}
     virtual ~BinOp() {}
     virtual BinOp * Optimize() { return this; }
     virtual void Translate() {}
@@ -118,6 +119,8 @@ public:
     virtual Assign * Optimize() { return this; }
     virtual void Translate() {}
     virtual llvm::Value * GenerateIR();
+
+    Var * GetVar() const { return _var; }
 private:
     Var * _var;
     Expr * _expr;
@@ -175,19 +178,33 @@ private:
     Statm * _statement;
 };
 
-class For : public Statm {
+//For Loop is created by using while loop
+
+//class For : public Statm {
+//public:
+//    For(Statm * assign, bool isAscending, Expr * toExpr, Statm * body) : _initAssign(assign), _isAscending(isAscending), _to(toExpr), _body(body) {}
+//    virtual ~For() {}
+//    virtual For * Optimize() { return this; }
+//    virtual void Translate() {}
+//    virtual llvm::Value * GenerateIR();
+//
+//private:
+//    Statm * _initAssign;
+//    bool _isAscending;
+//    Expr * _to;
+//    Statm * _body;
+//};
+
+
+class Break : public Statm {
 public:
-    For(Var * var, Expr * condition, Expr * expression, Statm * statement) : _var(var), _condition(condition), _expression(expression), _statement(statement) {}
-    virtual ~For() {}
-    virtual For * Optimize() { return this; }
+    Break() {}
+    virtual ~Break() {}
+    virtual Break * Optimize() { return this; }
     virtual void Translate() {}
     virtual llvm::Value * GenerateIR();
 
 private:
-    Var * _var;
-    Expr * _condition;
-    Expr * _expression;
-    Statm * _statement;
 };
 
 //class Empty : public Statm {
@@ -206,6 +223,8 @@ public:
     virtual Prog * Optimize() { return this; }
     virtual void Translate() {}
     virtual llvm::Value * GenerateIR();
+
+    string NameProgram() const { return _programIdent; }
 private:
     StatmList * _statmentList;
     string _programIdent;

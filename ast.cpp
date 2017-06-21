@@ -21,12 +21,16 @@ static Module * module;
 static std::map<std::string, Value *> namedValues;
 static SymboleTable * symboleTable;
 
+// Break Block
+static BasicBlock * breakTarget;
+
 //--------------------------------------------------------------------------------
 
-void llvmAstInit(LLVMContext & theContext, Module * theModule, IRBuilder<> & theBuilder, SymboleTable * symbTable) {
+void llvmAstInit(LLVMContext & theContext, Module * theModule, IRBuilder<> & theBuilder, BasicBlock * breakTargetBlock, SymboleTable * symbTable) {
     context = &theContext;
     module = theModule;
     builder = &theBuilder;
+    breakTarget = breakTargetBlock;
     symboleTable = symbTable;
 }
 
@@ -156,7 +160,7 @@ Value * StatmList::GenerateIR() {
 
 Value * Assign::GenerateIR() {
 
-    int * value;
+    int * value = new int(0);
     string ident = _var->GetName();
     SymboleType type = symboleTable->GetConstOrVar(ident, value);
     if (type == CONST) {
@@ -207,10 +211,8 @@ Value * If::GenerateIR() {
     builder->CreateCondBr(condition, thenBlock, elseBlock);
 
     builder->SetInsertPoint(thenBlock);
+
     Value * thenVal = _then->GenerateIR();
-    if (!thenVal) {
-        return nullptr;
-    }
 
     builder->CreateBr(conditionBlock);
 
@@ -219,9 +221,8 @@ Value * If::GenerateIR() {
     mainFunc->getBasicBlockList().push_back(elseBlock);
     builder->SetInsertPoint(elseBlock);
 
-    Value * elseVal = _else->GenerateIR();
-    if (!elseVal) {
-        return nullptr;
+    if (_else) {
+        Value *elseVal = _else->GenerateIR();
     }
 
     builder->CreateBr(conditionBlock);
@@ -236,15 +237,96 @@ Value * If::GenerateIR() {
 
 Value * While::GenerateIR() {
 
+    Value * condition = _condition->GenerateIR();
+    if (!condition) {
+        return nullptr;
+    }
 
+    Function * mainFunc = builder->GetInsertBlock()->getParent();
 
+    BasicBlock * loopBlock = BasicBlock::Create(*context, "loop", mainFunc);
+    BasicBlock * afterBlock = BasicBlock::Create(*context, "after");
+    BasicBlock * prevTarget = breakTarget;
+    breakTarget = afterBlock;
 
+    builder->CreateCondBr(condition, loopBlock, afterBlock);
+
+    builder->SetInsertPoint(loopBlock);
+
+    _statement->GenerateIR();
+
+    condition = _condition->GenerateIR();
+    builder->CreateCondBr(condition, loopBlock, afterBlock);
+    mainFunc->getBasicBlockList().push_back(afterBlock);
+
+    builder->SetInsertPoint(afterBlock);
+
+    breakTarget = prevTarget;
 
     return nullptr;
 }
 
-Value * For::GenerateIR() {
-    //TODO
+//Value * For::GenerateIR() {
+//
+//    Function *TheFunction = builder->GetInsertBlock()->getParent();
+//
+//    BasicBlock *condBB = BasicBlock::Create(*context, "condblock", TheFunction);
+//    BasicBlock *LoopBB = BasicBlock::Create(*context, "loop", TheFunction);
+//    BasicBlock *nextBlock = BasicBlock::Create(*context, "afterloop", TheFunction);
+//
+//    /* init */
+//    _initAssign->GenerateIR();
+//    builder->CreateBr(condBB);
+//
+//    /* condition */
+//    builder->SetInsertPoint(condBB);
+//
+//    Value *limitV = _to->GenerateIR();
+//
+//    Var *var = dynamic_cast<Assign *>(_initAssign)->GetVar();
+//
+//    Value *condV;
+//    if (!_isAscending)
+//        condV = builder->CreateICmpSGE(var->GenerateIR(), limitV, "le");
+//    else
+//        condV = builder->CreateICmpSLE(var->GenerateIR(), limitV, "ge");
+//
+//    builder->CreateCondBr(condV, LoopBB, nextBlock);
+//
+//
+//    builder->SetInsertPoint(LoopBB);
+//    _body->Translate();
+//
+//    /* iterate */
+//    Numb *one = new Numb(1);
+//    Value *updated = BinOp(_isAscending ? MINUS : PLUS, var, one).GenerateIR();
+//    //builder->CreateStore(updated, var);
+//
+//    builder->CreateBr(condBB);
+//
+//    /* next */
+//    builder->SetInsertPoint(nextBlock);
+//
+//
+//    return Constant::getNullValue(Type::getInt32Ty(*context));
+//}
+
+Value * Break::GenerateIR() {
+
+    Function * mainFunc = builder->GetInsertBlock()->getParent();
+
+    BasicBlock* breakBlock = BasicBlock::Create(*context, "break", mainFunc);
+    BasicBlock* afterBlock = BasicBlock::Create(*context, "aftbreak");
+
+    builder->CreateBr(breakBlock);
+    builder->SetInsertPoint(breakBlock);
+    if(breakTarget){
+        builder->CreateBr(breakTarget);
+    }
+
+    mainFunc->getBasicBlockList().push_back(afterBlock);
+    builder->SetInsertPoint(afterBlock);
+
     return nullptr;
 }
 

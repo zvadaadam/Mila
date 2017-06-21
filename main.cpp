@@ -93,7 +93,10 @@ int main() {
     //string fileName = "../examples/global.p";
     //string fileName = "../examples/readVar.p";
     //string fileName = "../examples/binOp.p";
-    string fileName = "../examples/if.p";
+    //string fileName = "../examples/if.p";
+    //string fileName = "../examples/while.p";
+    //string fileName = "../examples/whileBreak.p";
+    string fileName = "../examples/forCycle.p";
 
 
 
@@ -102,6 +105,7 @@ int main() {
     IRBuilder<> builder(context);
     Module *module = new Module("mainTest", context);
     map<string, Value *> namedValues;
+    BasicBlock * breakTarget;
 
     // create -> MAIN()
 
@@ -114,8 +118,9 @@ int main() {
     BasicBlock *mainBlock = BasicBlock::Create(context, "entry", mainFunction);
     builder.SetInsertPoint(mainBlock);
 
+    breakTarget = mainBlock;
 
-    Parser *parser = new Parser(fileName, context, module, builder);
+    Parser *parser = new Parser(fileName, context, module, builder, breakTarget);
 
     Prog *program = parser->Program();
 

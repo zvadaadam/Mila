@@ -11,7 +11,7 @@
 typedef enum {LETTER, NUMBER, WHITE_SPACE, END, NO_TYPE} InputCharType;
 
 
-const char *symbTable[39] = {
+const char *symbTable[41] = {
         "IDENT",
         "NUMB",
         "PLUS", "MINUS", "MULTIPLY", "DIVIDE",
@@ -25,12 +25,13 @@ const char *symbTable[39] = {
         "kwIF", "kwTHEN", "kwELSE",
         "kwSWITCH",
         "kwFOR", "kwWHILE",
-        "kwTO", "kwDO",
+        "kwTO", "kwDOWNTO", "kwDO",
+        "kwBREAK",
         "kwWRITE", "kwREAD",
         "kwAND", "kwOR",
         "kwMOD",
         "SEMICOLON", "COMMA", "DOT",
-        "EOI", "ERR"
+        "EOI", "ERR",
 }; //symbol names in the same order as in LexSymbolType
 
 static int character;   // vstupni znak
@@ -63,6 +64,8 @@ const struct {const char* slovo; LexSymbolType symb;} keyWordTable[] = {
         {"while", kwWHILE},
         {"to", kwTO},
         {"do", kwDO},
+        {"downto", kwDOWNTO},
+        {"break", kwBREAK},
         {"write", kwWRITE},
         {"read", kwREAD},
         {"and", kwAND},
