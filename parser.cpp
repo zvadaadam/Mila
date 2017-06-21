@@ -337,7 +337,13 @@ Statm * Parser::ForStat() {
 
     Statm * updateValue = new Assign(new Var(var->GetName(), false), new BinOp(ascOrDesc, new Var(var->GetName(), true), new Numb(1)));
 
-    StatmList * body = new StatmList(updateValue, ProgramBlock());
+    StatmList * body;
+    if (_symbole.type == kwBEGIN) {
+        body = new StatmList(updateValue, ProgramBlock());
+    } else {
+        body = new StatmList(updateValue, new StatmList(Statement(), nullptr));
+    }
+
 
     Statm * whileBlock = new While(condition, body);
 

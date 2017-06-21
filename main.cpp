@@ -96,7 +96,8 @@ int main() {
     //string fileName = "../examples/if.p";
     //string fileName = "../examples/while.p";
     //string fileName = "../examples/whileBreak.p";
-    string fileName = "../examples/forCycle.p";
+    //string fileName = "../examples/forCycle.p";
+    string fileName = "../examples/for.p";
 
 
 
