@@ -81,6 +81,8 @@ public:
 
     Expr * VarOrConst(string & id);
     Expr * Factor();
+
+    Numb * NumbArr();
 private:
     LexicalSymbol _symbole;
     SymboleTable * _symTable;

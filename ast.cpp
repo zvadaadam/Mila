@@ -37,22 +37,27 @@ void llvmAstInit(LLVMContext & theContext, Module * theModule, IRBuilder<> & the
 void SetGlobalVariables() {
 
     for (auto var : symboleTable->GetAllGlobalVar()) {
-        Constant * varInteger = ConstantInt::get(Type::getInt32Ty(*context), var->value, true);
         GlobalVariable * globalVar;
-        if (var->type == CONST) {
-            globalVar = new GlobalVariable(*module, Type::getInt32Ty(*context), true, GlobalValue::ExternalLinkage, 0, var->ident);
-        } else if (var->type == VAR) {
-            globalVar = new GlobalVariable(*module, Type::getInt32Ty(*context), false, GlobalValue::ExternalLinkage, 0, var->ident);
-        } else  {
-            //UNDEF type
-            continue;
-        }
-        globalVar->setAlignment(4);
-        globalVar->setInitializer(varInteger);
-        namedValues[var->ident] = module->getGlobalVariable(var->ident);
 
-        //ConstantInt * intVal = dyn_cast<ConstantInt>(module->getGlobalVariable(var->ident)->getInitializer());
-        //cout << intVal->getSExtValue() << endl;
+        if (var->type == VAR || var->type == CONST) {
+            Constant * varInteger = ConstantInt::get(Type::getInt32Ty(*context), var->value, true);
+            if (var->type == CONST) {
+                globalVar = new GlobalVariable(*module, Type::getInt32Ty(*context), true, GlobalValue::ExternalLinkage,
+                                               0, var->ident);
+            } else if (var->type == VAR) {
+                globalVar = new GlobalVariable(*module, Type::getInt32Ty(*context), false, GlobalValue::ExternalLinkage,
+                                               0, var->ident);
+            }
+            globalVar->setInitializer(varInteger);
+        } else if (var->type == ARRAY) {
+            ArrayType * arrayType = ArrayType::get(builder->getInt32Ty(), abs(var->start - var->end));
+            globalVar = new GlobalVariable(*module, arrayType, false, GlobalValue::ExternalLinkage, 0, var->ident);
+            ConstantAggregateZero* init = ConstantAggregateZero::get(arrayType);
+            globalVar->setInitializer(init);
+        }
+
+        globalVar->setAlignment(4);
+        namedValues[var->ident] = module->getGlobalVariable(var->ident);
     }
 }
 
@@ -77,6 +82,22 @@ Value * Var::GenerateIR() {
     return var;
 }
 
+Value * VarArray::GenerateIR() {
+
+    Value * arr = namedValues[_name];
+
+    Value * index = _index->GenerateIR();
+
+    vector<Value *> indexList = {ConstantInt::get(builder->getInt32Ty(),0), index};
+    Value * ptr = builder->CreateGEP(arr, indexList, _name.c_str()); //GetElementPointer
+
+    if (_rvalue) {
+        return builder->CreateLoad(ptr, (_name + "i").c_str());
+    } else {
+        return ptr;
+    }
+}
+
 Value * Numb::GenerateIR() {
     std::cout << "Creating integer value: " << _value << std::endl;
 
@@ -94,7 +115,6 @@ Value * BinOp::GenerateIR() {
         return nullptr;
     }
 
-    //TODO, add other operations, LESS, LESS_OR_EQ, GRATHER, GRATHER_OR_EQ, EQ, NOT_EQ,
     switch (_op) {
         case PLUS:
             return builder->CreateAdd(left, right, "addtmp");
@@ -345,8 +365,6 @@ Constant * Write::printFunc() {
     args.push_back(Type::getInt8PtrTy(*context));
     FunctionType *printfType = FunctionType::get(builder->getInt32Ty(), args, true);
     return module->getOrInsertFunction("printf", printfType);
-
-    //return module->getOrInsertFunction("printf", FunctionType::get(IntegerType::getInt32Ty(*context), PointerType::get(Type::getInt8Ty(*context), 0), true));
 }
 
 Constant * Read::scanfFunc() {

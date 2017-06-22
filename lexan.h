@@ -11,11 +11,12 @@ typedef enum {
     NUMB,
     PLUS, MINUS, MULTIPLY, DIVIDE,
     LESS, LESS_OR_EQ, GRATHER, GRATHER_OR_EQ, EQ, NOT_EQ,
-    LPAR, RPAR,
+    LPAR, RPAR, LBRA, RBRA,
     ASSIGN,
     kwPROGRAM,
     kwBEGIN, kwEND,
-    kwVAR, kwCONST,
+    kwVAR, kwCONST, kwINTEGER,
+    kwARRAY,
     kwFUNC,
     kwIF, kwTHEN, kwELSE,
     kwSWITCH,
@@ -25,11 +26,11 @@ typedef enum {
     kwWRITE, kwREAD,
     kwOR, kwAND,
     kwMOD,
-    SEMICOLON, COMMA, DOT,
+    SEMICOLON, COLON, COMMA, DOT,
     EOI, ERR
 } LexSymbolType;
 
-extern const char * symbTable[41];
+extern const char * symbTable[46];
 
 #define MAX_IDENT_LEN 32
 

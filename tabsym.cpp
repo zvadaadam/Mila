@@ -34,6 +34,7 @@ vector<Symbole *> SymboleTable::GetAllLocalVar() const {
     return allLocal;
 }
 
+
 void SymboleTable::DeclareConst(string ident, int val) {
     auto it = _globalTable.find(ident);
     if (it != _globalTable.end()) {
@@ -58,6 +59,23 @@ void SymboleTable::DeclareVar(string ident) {
     }
 
     Symbole * newSymbole = new Symbole(ident, SymboleType::VAR, 0);
+
+    if (!_isLocalScope) {
+        _globalTable.insert(make_pair(ident, newSymbole));
+    } else {
+        _localTable.insert(make_pair(ident, newSymbole));
+    }
+}
+
+void SymboleTable::DeclareVarArr(string ident, int start, int end) {
+
+    auto it = _globalTable.find(ident);
+    if (it != _globalTable.end()) {
+        cout << "Variable \"" << ident << "\" was already decleared" << endl;
+        exit(1);
+    }
+
+    Symbole * newSymbole = new Symbole(ident, SymboleType::ARRAY, start, end);
 
     if (!_isLocalScope) {
         _globalTable.insert(make_pair(ident, newSymbole));
@@ -102,6 +120,9 @@ SymboleType SymboleTable::GetConstOrVar(string & ident, int * value) {
         case VAR:
             *value = symbole->value;
             return VAR;
+        case ARRAY:
+            value = 0;
+            return ARRAY;
         default:
             Error(ident, "not decleared!");
             exit(1);

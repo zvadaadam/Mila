@@ -32,9 +32,13 @@ struct Symbole {
 
     SymboleType type;
 
+    int start;
+    int end;
+
     int value;
 
-    Symbole(string ident, SymboleType type, int value) : ident(ident), type(type), value(value) {}
+    Symbole(string ident, SymboleType type, int value) : ident(ident), type(type), value(value), start(0), end(0) {}
+    Symbole(string ident, SymboleType type, int start, int end) : ident(ident), type(type), value(0), start(start), end(end) {}
 };
 
 class SymboleTable {
@@ -50,6 +54,8 @@ public:
     void DeclareConst(string ident, int val);
 
     void DeclareVar(string ident);
+
+    void DeclareVarArr(string ident, int start, int end);
 
     void DeclareFunc(const string & name);
 

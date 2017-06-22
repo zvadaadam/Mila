@@ -133,15 +133,43 @@ void Parser::Decleration() {
 
 }
 
-// <variableDecleration> -> IDENT <nextVariableDecleration> SEMICOLON
+// <variableDecleration> -> IDENT <nextVariableDecleration> SEMICOLON | IDENT COLON INTEGER SEMICOLON | IDENT COLON ARRAY LBRA <numbarr> DOT DOT <numbarr> RBRA SEMICOLON
 void Parser::DeclerationVar() {
 
     string varIdent = "";
     CompareIndent(varIdent);
-    _symTable->DeclareVar(varIdent);
-    DeclerationVarNext();
-    Compare(_symbole.type);
+
+    //_symTable->DeclareVar(varIdent);
+
+    if (_symbole.type == COLON) {
+        ReadToken();
+        if (_symbole.type == kwARRAY) {
+            ReadToken();
+            Compare(LBRA);
+
+            Numb * start = NumbArr();
+
+            Compare(DOT);
+            Compare(DOT);
+
+            Numb * end = NumbArr();
+
+            Compare(RBRA);
+
+            _symTable->DeclareVarArr(varIdent, start->GetNumb(), end->GetNumb());
+
+        } else if (_symbole.type == kwINTEGER) {
+            ReadToken();
+            _symTable->DeclareVar(varIdent);
+        }
+    } else {
+        _symTable->DeclareVar(varIdent);
+        DeclerationVarNext();
+    }
+
+    Compare(SEMICOLON);
 }
+
 
 // <nextVariableDecleration> -> COMMA IDENT <nextVariableDecleration> | EPS
 void Parser::DeclerationVarNext() {
@@ -209,10 +237,6 @@ StatmList * Parser::ProgramBlock() {
 
     Compare(kwEND);
 
-    if (_symbole.type == SEMICOLON) {
-        ReadToken();
-    }
-
     return listStatm;
 }
 
@@ -257,11 +281,22 @@ StatmList * Parser::StatementNext() {
     return nullptr;
 }
 
-// <assigment> -> IDENT ASSIGN EXPR
+// <assigment> -> IDENT ASSIGN EXPR | IDENT LBRA <expression> RBRA ASSIGN EXPR
 Statm * Parser::AssigmentStat() {
     string ident;
     CompareIndent(ident);
-    Var * var = new Var(_symTable->GetValue(ident), ident);
+
+    Var * var;
+    if (_symbole.type == LBRA) {
+        ReadToken();
+        Expr * index = Expression();
+        Compare(RBRA);
+
+        var = new VarArray(ident, index);
+    } else {
+        var = new Var(_symTable->GetValue(ident), ident);
+    }
+
     Compare(ASSIGN);
     Expr * expression = Expression();
 
@@ -309,6 +344,7 @@ Statm * Parser::IfStat() {
 /**
  * For loop created by using while loop
  */
+// TODO, accept for i to 20 do ... without int of var
 // <for> -> kwFOR <assigment> kwTO <expression> kwDO <programBlock> | kwFOR <assigment> kwTO <expression> kwDO <statement>
 Statm * Parser::ForStat() {
     bool isAscendning;
@@ -454,9 +490,7 @@ Expr * Parser::Expression() {
     return ExpressionNext(Term());
 }
 
-// <expressionNext> -> PLUS <term> <expressionNext> | MINUS <term> <expressionNext> {| GRATHER <term> <expressionNext>
-// GRATHER_OR_EQ <term> <expressionNext> | LESS <term> <expressionNext> | LESS_OR_EQ <term> <expressionNext>|
-// EQ <term> <expressionNext> | NOT_EQ <term> <expressionNext> | kwAND <term> <expressionNext> | kwOR <term> <expressionNext>} | EPS
+// <expressionNext> -> PLUS <term> <expressionNext> | MINUS <term> <expressionNext> | EPS
 Expr * Parser::ExpressionNext(Expr * inheretedExp) {
 
     switch (_symbole.type) {
@@ -466,32 +500,6 @@ Expr * Parser::ExpressionNext(Expr * inheretedExp) {
         case MINUS:
             ReadToken();
             return ExpressionNext(new BinOp(MINUS, inheretedExp, Term()));
-            /*
-        case GRATHER:
-            ReadToken();
-            return ExpressionNext(new BinOp(GRATHER, inheretedExp, Term()));
-        case GRATHER_OR_EQ:
-            ReadToken();
-            return ExpressionNext(new BinOp(GRATHER_OR_EQ, inheretedExp, Term()));
-        case LESS:
-            ReadToken();
-            return ExpressionNext(new BinOp(LESS, inheretedExp, Term()));
-        case LESS_OR_EQ:
-            ReadToken();
-            return ExpressionNext(new BinOp(LESS_OR_EQ, inheretedExp, Term()));
-        case EQ:
-            ReadToken();
-            return ExpressionNext(new BinOp(EQ, inheretedExp, Term()));
-        case NOT_EQ:
-            ReadToken();
-            return ExpressionNext(new BinOp(NOT_EQ, inheretedExp, Term()));
-        case kwAND:
-            ReadToken();
-            return ExpressionNext(new BinOp(kwAND, inheretedExp, Term()));
-        case kwOR:
-            ReadToken();
-            return ExpressionNext(new BinOp(kwOR, inheretedExp, Term()));
-             */
         default:
             return inheretedExp;
     }
@@ -544,6 +552,20 @@ Expr * Parser::Factor() {
     }
 }
 
+// <numbarray> -> MINUS NUMB | NUMB
+Numb * Parser::NumbArr() {
+    int num;
+    if (_symbole.type == MINUS) {
+        ReadToken();
+        CompareNumb(num);
+        num = num * (-1);
+    } else {
+        CompareNumb(num);
+    }
+
+    return new Numb(num);
+}
+
 
 Expr * Parser::VarOrConst(string & id) {
     int value;
@@ -554,6 +576,15 @@ Expr * Parser::VarOrConst(string & id) {
             return new Numb(value);
         case VAR:
             return new Var(value, id, true);
+        case ARRAY: {
+            Compare(LBRA);
+
+            Expr * index = Expression();
+
+            Compare(RBRA);
+
+            return new VarArray(id, index, true);
+        }
         default:
             return nullptr;
     }

@@ -11,16 +11,17 @@
 typedef enum {LETTER, NUMBER, WHITE_SPACE, END, NO_TYPE} InputCharType;
 
 
-const char *symbTable[41] = {
+const char *symbTable[46] = {
         "IDENT",
         "NUMB",
         "PLUS", "MINUS", "MULTIPLY", "DIVIDE",
         "LESS", "LESS_OR_EQ", "GRATHER", "GRATHER_OR_EQ", "EQ", "NOT_EQ",
-        "LPAR", "RPAR",
+        "LPAR", "RPAR", "LBRA", "RBRA",
         "ASSIGN",
         "kwPROGRAM",
         "kwBEGIN", "kwEND",
-        "kwVAR", "kwCONST",
+        "kwVAR", "kwCONST", "kwINTEGER",
+        "kwARRAY",
         "kwFUNC",
         "kwIF", "kwTHEN", "kwELSE",
         "kwSWITCH",
@@ -30,7 +31,7 @@ const char *symbTable[41] = {
         "kwWRITE", "kwREAD",
         "kwAND", "kwOR",
         "kwMOD",
-        "SEMICOLON", "COMMA", "DOT",
+        "SEMICOLON", "COLON", "COMMA", "DOT",
         "EOI", "ERR",
 }; //symbol names in the same order as in LexSymbolType
 
@@ -54,7 +55,8 @@ void readInput(void) {
 const struct {const char* slovo; LexSymbolType symb;} keyWordTable[] = {
         {"program", kwPROGRAM},
         {"begin", kwBEGIN}, {"end", kwEND},
-        {"var", kwVAR}, {"const", kwCONST},
+        {"var", kwVAR}, {"const", kwCONST}, {"integer", kwINTEGER},
+        {"array", kwARRAY},
         {"function", kwFUNC},
         {"if", kwIF},
         {"then", kwTHEN},
@@ -105,6 +107,16 @@ LexicalSymbol readLexem(void) {
             return data;
         case ')':
             data.type = RPAR;
+            readInput();
+
+            return data;
+        case '[':
+            data.type = LBRA;
+            readInput();
+
+            return data;
+        case ']':
+            data.type = RBRA;
             readInput();
 
             return data;
@@ -289,15 +301,20 @@ LexicalSymbol readLexem(void) {
         case '=':
             readInput();
             data.type = ASSIGN;
+
             return data;
-        default:;
-    }
-    switch(input) {
-        default:
-            data.type = ERR;
-            error("Ocekava se \'=\'.");
+        default : {
+            data.type = COLON;
+
             return data;
+        }
     }
+//    switch(input) {
+//        default:
+//            data.type = ERR;
+//            error("Ocekava se \'=\'.");
+//            return data;
+//    }
 
 
     q51:

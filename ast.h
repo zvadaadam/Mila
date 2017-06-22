@@ -53,10 +53,23 @@ public:
     virtual llvm::Value * GenerateIR();
 
     string GetName() const { return _name; }
-private:
+
+protected:
     int _value;
     string _name;
     bool _rvalue;
+};
+
+class VarArray : public Var {
+public:
+    VarArray(const string & name, Expr * index, bool rvalue = false) : Var(name, rvalue), _index(index) {}
+    virtual ~VarArray() {}
+    virtual VarArray * Optimize() { return this; }
+    virtual void Translate() {}
+    virtual llvm::Value * GenerateIR();
+
+private:
+    Expr * _index;
 };
 
 class Numb : public Expr {
@@ -66,6 +79,8 @@ public:
     virtual Numb * Optimize() { return this; }
     virtual void Translate() {}
     virtual llvm::Value * GenerateIR();
+
+    int GetNumb() const { return  _value; }
 private:
     int _value;
 };
